@@ -1,0 +1,1 @@
+This a text file input1.txt. Extract the second sentence please.
