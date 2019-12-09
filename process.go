@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-var bufSize = flag.Int("buffer size", 256, "Size of the buffer to read file to ")
+var bufSize = flag.Int("buffer size", 64, "Size of the buffer to read file to ")
 
 func processCLParameters() (string, string) {
 
@@ -49,8 +49,8 @@ func getLastSentence(inputFile, outputDir string, channel chan string) {
 		return
 	}
 
-	var sentence strings.Builder
-	var fl bool //Indicates whether there is a finished sentence in 'sentence'
+	var sentence string
+
 	re, _ := regexp.Compile(`(?:\.{3}|!|\.|\?)\s+`)
 
 	for {
@@ -61,42 +61,19 @@ func getLastSentence(inputFile, outputDir string, channel chan string) {
 			break
 		}
 
-		match := re.FindAllIndex(buffer, -1)
+		sentence += string(buffer)
 
-		if len(match) < 1 {
-			nonempty, _ := regexp.Match(`[^$|\s+|\x00]`, buffer[:]) //Indicates whether the last part of buffer is empty
+		match := re.FindAllIndex([]byte(sentence), -1)
 
-			if nonempty && !fl {
-				sentence.Write(buffer)
-			} else if nonempty && fl { //Will skip if we have an empty line
-				sentence.Reset()
-				sentence.Write(buffer)
-				fl = false
-			}
+		if len(match) >= 1 {
+			nonempty, _ := regexp.Match(`[^\s+|\x00]`, []byte(sentence[match[len(match)-1][1]:]))
 
-		} else if len(match) == 1 {
-			nonempty, _ := regexp.Match(`[^$|\s+|\x00]`, buffer[match[len(match)-1][1]:])
-
-			if !nonempty {
-				sentence.Write(buffer[0:match[len(match)-1][1]])
-				fl = true
-			} else if len(buffer[match[len(match)-1][1]:]) > 0 {
-				sentence.Reset()
-				sentence.Write(buffer[match[len(match)-1][1]:*bufSize])
-				fl = false
-			}
-
-		} else {
-			nonempty, _ := regexp.Match(`[^$|\s+|\x00]`, buffer[match[len(match)-1][1]:])
-
-			sentence.Reset()
-
-			if nonempty {
-				sentence.Write(buffer[match[len(match)-1][1]:*bufSize])
-				fl = false
+			if !nonempty && len(match) > 1 {
+				sentence = sentence[match[len(match)-2][1]:match[len(match)-1][1]]
+			} else if !nonempty {
+				sentence = sentence[0:match[len(match)-1][1]]
 			} else {
-				sentence.Write(buffer[match[len(match)-2][1]:match[len(match)-1][1]])
-				fl = true
+				sentence = sentence[match[len(match)-1][1]:]
 			}
 		}
 
@@ -121,7 +98,7 @@ func getLastSentence(inputFile, outputDir string, channel chan string) {
 		return
 	}
 
-	if _, err = outfile.WriteString(sentence.String()); err != nil {
+	if _, err = outfile.WriteString(sentence); err != nil {
 		channel <- err.Error()
 		return
 	}
@@ -153,8 +130,8 @@ func main() {
 	counter := 0
 
 	for counter < filesAmount {
-		if err := <-channel; err != "" {
-			log.Fatalf("Error inside the go routine : %s", err)
+		if err := <-channel; err != "" { //prevents deadlock
+			log.Fatalf("Error in the go routine : %s", err)
 		} else {
 			counter++
 		}
