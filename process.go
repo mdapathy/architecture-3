@@ -17,6 +17,8 @@ func processCLParameters() (string, string) {
 
 	if len(os.Args) < 3 {
 		log.Fatalf("Not enough parameters specified, required 2, got %d", len(os.Args)-1)
+	} else if dir, err := os.Stat(os.Args[2]); !os.IsNotExist(err) && !dir.IsDir() {
+		log.Fatalf("Second param is supposed to be a directory " +  os.Args[2])
 	} else if len(os.Args) > 3 {
 		fmt.Println("Ignoring all parameters except " + os.Args[1] + " and " + os.Args[2])
 	}
