@@ -2,6 +2,8 @@
 
 const fs = require('fs');
 
+let done = 0;
+
 if (process.argv.length < 4) {
   console.error("Not enough parameters specified, required 2, got %d", process.argv.length - 2)
   process.exit();
@@ -28,6 +30,9 @@ const exec = async (file, taskLocation, resultLocation) => {
       })
     })
   });
+  done++;
+  if(process.argv.length-2 === done)
+    console.log('Total number of processed files: ', done);
 }
 
 fs.readdir(process.argv[2], (err, files) => {
