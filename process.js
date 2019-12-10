@@ -24,11 +24,8 @@ const exec = async (file, taskLocation, resultLocation) => {
         for(let i = 0; i < bytesRead; i++)
           text += String.fromCharCode(buffer[i]);
         fs.mkdirSync(resultLocation, {recursive: true});
-        const arr = (text+'   ').split(/(?<=[.?!] )/g);
-        //if(file == '/2.txt') 
-        //  console.log(arr)
-        //console.log(file, arr.length);
-        fs.appendFile(resultLocation + file.split('.')[0] + '.res', arr[arr.length-2], (err) => {
+        const arr = (text+'   ').split(/(?<=[.?!][\s+|\n|\r\n])/g);
+        fs.writeFile(resultLocation + file.split('.')[0] + '.res', arr[arr.length-2], (err) => {
           if(err) throw err;
           if(need === ++done)
             console.log('Total number of processed files: ', done);
