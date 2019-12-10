@@ -3,6 +3,7 @@
 const fs = require('fs');
 
 let done = 0;
+let need = 1;
 
 if (process.argv.length < 4) {
   console.error("Not enough parameters specified, required 2, got %d", process.argv.length - 2)
@@ -24,19 +25,22 @@ const exec = async (file, taskLocation, resultLocation) => {
           text += String.fromCharCode(buffer[i]);
         fs.mkdirSync(resultLocation, {recursive: true});
         const arr = (text+'   ').split(/(?<=[.?!] )/g);
+        //if(file == '/2.txt') 
+        //  console.log(arr)
+        //console.log(file, arr.length);
         fs.appendFile(resultLocation + file.split('.')[0] + '.res', arr[arr.length-2], (err) => {
           if(err) throw err;
+          if(need === ++done)
+            console.log('Total number of processed files: ', done);
         })
       })
     })
   });
-  done++;
-  if(process.argv.length-2 === done)
-    console.log('Total number of processed files: ', done);
 }
 
 fs.readdir(process.argv[2], (err, files) => {
   if(err) throw err;
+  need = files.length;
   files.forEach(element => {
     setTimeout(() => (exec('/' + element, process.argv[2], process.argv[3])), 0);
   });
