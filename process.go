@@ -18,7 +18,7 @@ func processCLParameters() (string, string) {
 	if len(os.Args) < 3 {
 		log.Fatalf("Not enough parameters specified, required 2, got %d", len(os.Args)-1)
 	} else if dir, err := os.Stat(os.Args[2]); !os.IsNotExist(err) && !dir.IsDir() {
-		log.Fatalf("Second param is supposed to be a directory " +  os.Args[2])
+		log.Fatalf("Second param is supposed to be a directory " + os.Args[2])
 	} else if len(os.Args) > 3 {
 		fmt.Println("Ignoring all parameters except " + os.Args[1] + " and " + os.Args[2])
 	}
@@ -55,6 +55,14 @@ func getLastSentence(inputFile, outputDir string, channel chan string) {
 
 	re, _ := regexp.Compile(`(?:\.{3}|!|\.|\?)\s+`)
 
+	stat, _ := file.Stat()
+
+	if int(stat.Size()) > 2000 {
+		pos := int(stat.Size() - 2000)
+		_, _ = file.Seek(int64(pos), 0)
+
+	}
+
 	for {
 		buffer := make([]byte, *bufSize)
 		_, err = file.Read(buffer)
@@ -64,7 +72,6 @@ func getLastSentence(inputFile, outputDir string, channel chan string) {
 		}
 
 		sentence += string(buffer)
-
 		match := re.FindAllIndex([]byte(sentence), -1)
 
 		if len(match) >= 1 {
