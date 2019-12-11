@@ -9,9 +9,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 var bufSize = flag.Int("buffer size", 64, "Size of the buffer to read file to ")
+var w sync.WaitGroup
 
 func processCLParameters() (string, string) {
 
@@ -43,12 +45,14 @@ func getInputFiles(root string) ([]string, error) {
 	return files, err
 }
 
-func getLastSentence(inputFile, outputDir string, channel chan string) {
+func getLastSentence(inputFile, outputDir string) {
+
+	defer w.Done()
 
 	file, err := os.Open(inputFile)
 	if err != nil {
-		channel <- err.Error()
-		return
+		log.Fatalf("Error in the go routine : %s", err)
+
 	}
 
 	var sentence string
@@ -96,28 +100,23 @@ func getLastSentence(inputFile, outputDir string, channel chan string) {
 	outputFileName := strings.Split(res[len(res)-1], ".")[0] + ".res"
 
 	if err = os.MkdirAll(outputDir, 0777); err != nil { //Will create the directory only if it doesn't exist already
-		channel <- err.Error()
-		return
+		log.Fatalf("Error in the go routine : %s", err)
 	}
 
 	outfile, err := os.Create(outputDir + "/" + outputFileName)
 
 	if err != nil {
-		channel <- err.Error()
-		return
+		log.Fatalf("Error in the go routine : %s", err)
 	}
 
 	if _, err = outfile.WriteString(sentence); err != nil {
-		channel <- err.Error()
-		return
+		log.Fatalf("Error in the go routine : %s", err)
 	}
 
 	if err = outfile.Close(); err != nil {
-		channel <- err.Error()
-		return
+		log.Fatalf("Error in the go routine : %s", err)
 	}
 
-	channel <- ""
 }
 
 func main() {
@@ -129,23 +128,13 @@ func main() {
 		log.Fatalf("An error occurred while processing the input directory: %s", err)
 	}
 
-	channel := make(chan string)
-
 	for _, file := range inputFiles {
-		go getLastSentence(file, outputDir, channel)
+		w.Add(1)
+		go getLastSentence(file, outputDir)
 	}
 
-	filesAmount := len(inputFiles)
-	counter := 0
+	w.Wait()
 
-	for counter < filesAmount {
-		if err := <-channel; err != "" { //prevents deadlock
-			log.Fatalf("Error in the go routine : %s", err)
-		} else {
-			counter++
-		}
-	}
-
-	fmt.Println("Total number of processed files:", counter)
+	fmt.Println("Total number of processed files:", len(inputFiles))
 
 }
