@@ -67,15 +67,16 @@ func getLastSentence(inputFile, outputDir string) {
 
 	}
 
+	buffer := make([]byte, *bufSize)
+
 	for {
-		buffer := make([]byte, *bufSize)
-		_, err = file.Read(buffer)
+		read, err := file.Read(buffer)
 
 		if err == io.EOF {
 			break
 		}
 
-		sentence += string(buffer)
+		sentence += string(buffer[:read])
 		match := re.FindAllIndex([]byte(sentence), -1)
 
 		if len(match) >= 1 {
