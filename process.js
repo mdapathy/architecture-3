@@ -39,6 +39,6 @@ fs.readdir(process.argv[2], (err, files) => {
   if(err) throw err;
   need = files.length;
   files.forEach(element => {
-    setTimeout(() => (exec('/' + element, process.argv[2], process.argv[3])), 0);
+    exec('/' + element, process.argv[2], process.argv[3]);
   });
 });
