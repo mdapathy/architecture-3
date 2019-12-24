@@ -55,9 +55,11 @@ func getLastSentence(inputFile, outputDir string) {
 
 	}
 
+	defer file.Close()
+
 	var sentence string
 
-	re, _ := regexp.Compile(`(?:\.{3}|!|\.|\?)\s+`)
+	re := regexp.MustCompile(`(?:\.{3}|!|\.|\?)\s+`)
 
 	stat, _ := file.Stat()
 
@@ -93,9 +95,6 @@ func getLastSentence(inputFile, outputDir string) {
 
 	}
 
-	if err = file.Close(); err != nil {
-		panic(err)
-	}
 
 	res := strings.Split(inputFile, "/")
 	outputFileName := strings.Split(res[len(res)-1], ".")[0] + ".res"
@@ -110,11 +109,9 @@ func getLastSentence(inputFile, outputDir string) {
 		log.Fatalf("Error in the go routine : %s", err)
 	}
 
-	if _, err = outfile.WriteString(sentence); err != nil {
-		log.Fatalf("Error in the go routine : %s", err)
-	}
+	defer outfile.Close()
 
-	if err = outfile.Close(); err != nil {
+	if _, err = outfile.WriteString(sentence); err != nil {
 		log.Fatalf("Error in the go routine : %s", err)
 	}
 
